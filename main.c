@@ -1,5 +1,6 @@
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 float letter_frequencies[26] = { 0.0804, 0.0154, 0.0306, 0.0399, 0.1251,
@@ -58,6 +59,10 @@ float english_score(char* str) {
 	size_t size = strlen(str);
 	for(size_t idx = 0; idx < size; idx++) {
 		char current_letter = str[idx];
+		if((current_letter >= '\0' && current_letter <= 8) ||
+		   current_letter < '\0') {
+			return 0;
+		}
 		if(current_letter >= 'A' && current_letter <= 'Z') {
 			current_letter += 97 - 65;
 		}
@@ -73,34 +78,46 @@ float english_score(char* str) {
 	return score;
 }
 
+unsigned char** parse_lines(char* filename) {
+	static unsigned char* lines[256];
+	size_t idx = 0;
+	FILE* infile = fopen(filename, "r");
+	while(!feof(infile)) {
+		lines[idx] = malloc(256 * sizeof(unsigned char));
+		fscanf(infile, "%255s\n", lines[idx]);
+		idx++;
+	}
+	fclose(infile);
+	lines[idx] = '\0';
+	return lines;
+}
+
 void s1c1() {
-	FILE* infile = fopen("inputs1c1.txt", "r");
-	unsigned char input[256];
-	fscanf(infile, "%255s\n", input);
-	hex_to_bytes(input);
+	unsigned char** input = parse_lines("inputs1c1.txt");
+	hex_to_bytes(input[0]);
 	unsigned char output[256];
 
 	size_t i_idx = 0;
 	size_t o_idx = 0;
-	while(input[i_idx]     != '\0' && input[i_idx + 1] != '\0' &&
-	      input[i_idx + 2] != '\0' ) {
-		output[o_idx] = input[i_idx] >> 2;
-		output[o_idx + 1] = (input[i_idx] & 3) << 4;
-		output[o_idx + 1] += input[i_idx + 1] >> 4;
-		output[o_idx + 2] = (input[i_idx + 1] & 15) << 2;
-		output[o_idx + 2] += input[i_idx + 2] >> 6;
-		output[o_idx + 3] = input[i_idx + 2] & 63;
+	while(input[0][i_idx]     != '\0' && input[0][i_idx + 1] != '\0' &&
+	      input[0][i_idx + 2] != '\0' ) {
+		output[o_idx] = input[0][i_idx] >> 2;
+		output[o_idx + 1] = (input[0][i_idx] & 3) << 4;
+		output[o_idx + 1] += input[0][i_idx + 1] >> 4;
+		output[o_idx + 2] = (input[0][i_idx + 1] & 15) << 2;
+		output[o_idx + 2] += input[0][i_idx + 2] >> 6;
+		output[o_idx + 3] = input[0][i_idx + 2] & 63;
 		i_idx += 3;
 		o_idx += 4;
 	}
-	if(input[i_idx] != '\0') {
-		output[o_idx] = input[i_idx] >> 2;
-		output[o_idx + 1] = (input[i_idx] & 3) << 4;
+	if(input[0][i_idx] != '\0') {
+		output[o_idx] = input[0][i_idx] >> 2;
+		output[o_idx + 1] = (input[0][i_idx] & 3) << 4;
 		i_idx++;
 		o_idx++;
-		if(input[i_idx] != '\0') {
-			output[o_idx] += input[i_idx] >> 4;
-			output[o_idx + 1] = (input[i_idx] & 15) << 2;
+		if(input[0][i_idx] != '\0') {
+			output[o_idx] += input[0][i_idx] >> 4;
+			output[o_idx + 1] = (input[0][i_idx] & 15) << 2;
 			i_idx++;
 			o_idx++;
 			output[o_idx] = '=';
@@ -131,18 +148,14 @@ void s1c1() {
 }
 
 void s1c2() {
-	FILE* infile = fopen("inputs1c2.txt", "r");
-	unsigned char input1[256];
-	fscanf(infile, "%255s\n", input1);
-	size_t original_size = strlen((const char*) input1);
-	hex_to_bytes(input1);
-	unsigned char input2[256];
-	fscanf(infile, "%255s\n", input2);
-	hex_to_bytes(input2);
+	unsigned char** input = parse_lines("inputs1c2.txt");
+	size_t original_size = strlen((const char*) input[0]);
+	hex_to_bytes(input[0]);
+	hex_to_bytes(input[1]);
 	unsigned char output[256];
 
 	for(size_t idx = 0; idx < original_size / 2; idx++) {
-		output[idx] = input1[idx] ^ input2[idx];
+		output[idx] = input[0][idx] ^ input[1][idx];
 	}
 
 	bytes_to_hex(output, original_size / 2);
@@ -150,24 +163,22 @@ void s1c2() {
 }
 
 void s1c3() {
-	FILE* infile = fopen("inputs1c3.txt", "r");
-	unsigned char input[256];
-	fscanf(infile, "%255s\n", input);
-	hex_to_bytes(input);
+	unsigned char** input = parse_lines("inputs1c3.txt");
+	hex_to_bytes(input[0]);
 
-	unsigned char lowest_key = 0;
+	unsigned char highest_key = 0;
 	float highest_score = 0;
 	unsigned char current_key = 0;
-	size_t input_size = strlen((const char*) input);
+	size_t input_size = strlen((const char*) input[0]);
 	while(1) {
 		unsigned char output[256];
 		for(size_t idx = 0; idx < input_size; idx++) {
-			output[idx] = input[idx] ^ current_key;
+			output[idx] = input[0][idx] ^ current_key;
 		}
 		output[input_size] = '\0';
 		float current_score = english_score((char*) output);
 		if(current_score > highest_score) {
-			lowest_key = current_key;
+			highest_key = current_key;
 			highest_score = current_score;
 		}
 		if(current_key == 255) {
@@ -178,7 +189,45 @@ void s1c3() {
 
 	unsigned char output[256];
 	for(size_t idx = 0; idx < input_size; idx++) {
-		output[idx] = input[idx] ^ lowest_key;
+		output[idx] = input[0][idx] ^ highest_key;
+	}
+	output[input_size] = '\0';
+	printf("%s\n", output);
+}
+
+void s1c4() {
+	unsigned char** input = parse_lines("inputs1c4.txt");
+
+	size_t highest_line = 0;
+	size_t highest_key = 0;
+	float highest_score = 0;
+	for(size_t current_line = 0; input[current_line] != '\0'; current_line++) {
+		hex_to_bytes(input[current_line]);
+		unsigned char current_key = 0;
+		size_t input_size = strlen((const char*) input[current_line]);
+		while(1) {
+			unsigned char output[256];
+			for(size_t idx = 0; idx < input_size; idx++) {
+				output[idx] = input[current_line][idx] ^ current_key;
+			}
+			output[input_size] = '\0';
+			float current_score = english_score((char*) output);
+			if(current_score > highest_score) {
+				highest_line = current_line;
+				highest_key = current_key;
+				highest_score = current_score;
+			}
+			if(current_key == 255) {
+				break;
+			}
+			current_key++;
+		}
+	}
+
+	size_t input_size = strlen((const char*) input[highest_line]);
+	unsigned char output[256];
+	for(size_t idx = 0; idx < input_size; idx++) {
+		output[idx] = input[highest_line][idx] ^ highest_key;
 	}
 	output[input_size] = '\0';
 	printf("%s\n", output);
@@ -188,5 +237,6 @@ int main() {
 	s1c1();
 	s1c2();
 	s1c3();
+	s1c4();
 	return 0;
 }
