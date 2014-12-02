@@ -1,5 +1,13 @@
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
+
+float letter_frequencies[26] = { 0.0804, 0.0154, 0.0306, 0.0399, 0.1251,
+                                 0.0230, 0.0196, 0.0549, 0.0726, 0.0016,
+                                 0.0067, 0.0414, 0.0253, 0.0709, 0.0760,
+                                 0.0200, 0.0011, 0.0612, 0.0654, 0.0925,
+                                 0.0271, 0.0099, 0.0192, 0.0019, 0.0173,
+                                 0.0009                                  };
 
 void hex_to_bytes(unsigned char* str) {
 	size_t idx;
@@ -39,6 +47,30 @@ void bytes_to_hex(unsigned char* str, size_t size) {
 			str[idx] += 'a' - 10;
 		}
 	}
+}
+
+float english_score(char* str) {
+	size_t single_count[26];
+	for(size_t idx = 0; idx < 26; idx++) {
+		single_count[idx] = 0;
+	}
+	size_t letter_count = 0;
+	size_t size = strlen(str);
+	for(size_t idx = 0; idx < size; idx++) {
+		char current_letter = str[idx];
+		if(current_letter >= 'A' && current_letter <= 'Z') {
+			current_letter += 97 - 65;
+		}
+		if(current_letter >= 'a' && current_letter <= 'z') {
+			single_count[current_letter - 'a']++;
+			letter_count++;
+		}
+	}
+	float score = 26;
+	for(size_t idx = 0; idx < 26; idx++) {
+		score -= fabs(((float) single_count[idx]) / letter_count - letter_frequencies[idx]);
+	}
+	return score;
 }
 
 void s1c1() {
@@ -117,8 +149,44 @@ void s1c2() {
 	printf("%s\n", output);
 }
 
+void s1c3() {
+	FILE* infile = fopen("inputs1c3.txt", "r");
+	unsigned char input[256];
+	fscanf(infile, "%255s\n", input);
+	hex_to_bytes(input);
+
+	unsigned char lowest_key = 0;
+	float highest_score = 0;
+	unsigned char current_key = 0;
+	size_t input_size = strlen((const char*) input);
+	while(1) {
+		unsigned char output[256];
+		for(size_t idx = 0; idx < input_size; idx++) {
+			output[idx] = input[idx] ^ current_key;
+		}
+		output[input_size] = '\0';
+		float current_score = english_score((char*) output);
+		if(current_score > highest_score) {
+			lowest_key = current_key;
+			highest_score = current_score;
+		}
+		if(current_key == 255) {
+			break;
+		}
+		current_key++;
+	}
+
+	unsigned char output[256];
+	for(size_t idx = 0; idx < input_size; idx++) {
+		output[idx] = input[idx] ^ lowest_key;
+	}
+	output[input_size] = '\0';
+	printf("%s\n", output);
+}
+
 int main() {
 	s1c1();
 	s1c2();
+	s1c3();
 	return 0;
 }
