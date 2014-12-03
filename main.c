@@ -21,7 +21,7 @@ void hex_to_bytes(unsigned char* str) {
 	}
 	size_t size = idx;
 
-	for(idx = 0; idx < size * 2; idx++) {
+	for(idx = 0; idx < size / 2; idx++) {
 		str[idx] = str[idx * 2] << 4;
 		str[idx] += str[idx * 2 + 1];
 	}
@@ -84,7 +84,7 @@ unsigned char** parse_lines(char* filename) {
 	FILE* infile = fopen(filename, "r");
 	while(!feof(infile)) {
 		lines[idx] = malloc(256 * sizeof(unsigned char));
-		fscanf(infile, "%255s\n", lines[idx]);
+		fscanf(infile, "%255[^\n]\n", lines[idx]);
 		idx++;
 	}
 	fclose(infile);
@@ -233,10 +233,28 @@ void s1c4() {
 	printf("%s\n", output);
 }
 
+void s1c5() {
+	FILE* infile = fopen("inputs1c5.txt", "r");
+	unsigned char input[256];
+	input[fread(input, 1, 255, infile)] = '\0';
+	fclose(infile);
+
+	unsigned char* key = (unsigned char*) "ICE";
+	unsigned char output[256];
+	size_t size = strlen((const char*) input);
+	for(size_t idx = 0; idx < size; idx++) {
+		output[idx] = input[idx] ^ key[idx % 3];
+	}
+	output[size] = '\0';
+	bytes_to_hex(output, size);
+	printf("%s\n", output);
+}
+
 int main() {
 	s1c1();
 	s1c2();
 	s1c3();
 	s1c4();
+	s1c5();
 	return 0;
 }
