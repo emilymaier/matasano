@@ -404,12 +404,12 @@ float english_score(unsigned char* str, size_t size) {
 }
 
 unsigned char** parse_lines(char* filename) {
-	static unsigned char* lines[256];
+	static unsigned char* lines[1024];
 	size_t idx = 0;
 	FILE* infile = fopen(filename, "r");
 	while(!feof(infile)) {
-		lines[idx] = malloc(256 * sizeof(unsigned char));
-		fscanf(infile, "%255[^\n]\n", lines[idx]);
+		lines[idx] = malloc(1024 * sizeof(unsigned char));
+		fscanf(infile, "%1023[^\n]\n", lines[idx]);
 		idx++;
 	}
 	fclose(infile);
@@ -857,6 +857,26 @@ void s1c7() {
 	printf("%s\n", bytes);
 }
 
+void s1c8() {
+	unsigned char** input = parse_lines("inputs1c8.txt");
+	for(size_t current_line = 0; input[current_line] != '\0'; current_line++) {
+		unsigned char* bytes = malloc(strlen((const char*) input[current_line]));
+		size_t line_length = base64_to_bytes(input[current_line], bytes);
+		size_t matches = 0;
+		for(size_t start = 0; start < line_length - 16; start += 16) {
+			for(size_t next = start + 16; next < line_length; next += 16) {
+				if(!memcmp((const char*) (bytes + start),
+				           (const char*) (bytes + next), 16)) {
+					matches++;
+				}
+			}
+		}
+		if(matches) {
+			printf("%s\n", input[current_line]);
+		}
+	}
+}
+
 int main() {
 	s1c1();
 	s1c2();
@@ -865,5 +885,6 @@ int main() {
 	s1c5();
 	s1c6();
 	s1c7();
+	s1c8();
 	return 0;
 }
