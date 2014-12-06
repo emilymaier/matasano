@@ -674,7 +674,7 @@ void rijndael_inv_mix_columns(unsigned char* block) {
 	}
 }
 
-void rijndael_forward(unsigned char* block, unsigned char* key) {
+void rijndael_encipher(unsigned char* block, unsigned char* key) {
 	unsigned char* round_keys = rijndael_round_keys(key);
 	rijndael_add_round_key(block, round_keys);
 	for(size_t round = 1; round < 10; round++) {
@@ -688,7 +688,7 @@ void rijndael_forward(unsigned char* block, unsigned char* key) {
 	rijndael_add_round_key(block, round_keys + 16 * 10);
 }
 
-void rijndael_reverse(unsigned char* block, unsigned char* key) {
+void rijndael_decipher(unsigned char* block, unsigned char* key) {
 	unsigned char* round_keys = rijndael_round_keys(key);
 	rijndael_add_round_key(block, round_keys + 16 * 10);
 	for(size_t round = 9; round > 0; round--) {
@@ -851,7 +851,7 @@ void s1c7() {
 	size = base64_to_bytes(input, bytes);
 
 	for(size_t start = 0; start < size; start += 16) {
-		rijndael_reverse(bytes + start, (unsigned char*) "YELLOW SUBMARINE");
+		rijndael_decipher(bytes + start, (unsigned char*) "YELLOW SUBMARINE");
 	}
 	bytes[size] = '\0';
 	printf("%s\n", bytes);
@@ -889,6 +889,31 @@ void s2c9() {
 	printf("%s\n", output);
 }
 
+void s2c10() {
+	FILE* infile = fopen("inputs2c10.txt", "r");
+	fseek(infile, 0L, SEEK_END);
+	size_t size = ftell(infile);
+	fseek(infile, 0L, SEEK_SET);
+	unsigned char* input = malloc(size + 1);
+	fread(input, 1, size, infile);
+	fclose(infile);
+	input[size] = '\0';
+	unsigned char* bytes = malloc(size);
+	size = base64_to_bytes(input, bytes);
+
+	unsigned char prev_block[16] = { 0, 0, 0, 0, 0, 0, 0, 0,
+	                                 0, 0, 0, 0, 0, 0, 0, 0  };
+	for(size_t start = 0; start < size; start += 16) {
+		unsigned char current_block[16];
+		memcpy(current_block, bytes + start, 16);
+		rijndael_decipher(bytes + start, (unsigned char*) "YELLOW SUBMARINE");
+		memxor(bytes + start, bytes + start, prev_block, 16);
+		memcpy(prev_block, current_block, 16);
+	}
+	bytes[size] = '\0';
+	printf("%s\n", bytes);
+}
+
 int main() {
 	s1c1();
 	s1c2();
@@ -899,5 +924,6 @@ int main() {
 	s1c7();
 	s1c8();
 	s2c9();
+	s2c10();
 	return 0;
 }
