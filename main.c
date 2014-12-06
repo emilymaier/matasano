@@ -877,6 +877,18 @@ void s1c8() {
 	}
 }
 
+void s2c9() {
+	char input[16] = "YELLOW SUBMARINE";
+	char output[21];
+	memcpy(output, input, 16);
+	output[20] = '\0';
+	char pad = 20 - 16;
+	for(size_t idx = 16; idx < 20; idx++) {
+		output[idx] = pad;
+	}
+	printf("%s\n", output);
+}
+
 int main() {
 	s1c1();
 	s1c2();
@@ -886,5 +898,6 @@ int main() {
 	s1c6();
 	s1c7();
 	s1c8();
+	s2c9();
 	return 0;
 }
