@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "rijndael.h"
 #include "util.h"
@@ -451,7 +452,51 @@ void s2c10() {
 	printf("%s\n", bytes);
 }
 
+void s2c11() {
+	unsigned char* data = (unsigned char*) "YELLOW SUBMARINEYELLOW SUBMARINEYELLOW SUBMARINEYELLOW SUBMARINE";
+	for(size_t round = 0; round < 16; round++) {
+		int round_type = rand() % 2;
+		if(round_type == 0) {
+			fputs("Using ECB... ", stdout);
+		} else {
+			fputs("Using CBC... ", stdout);
+		}
+		unsigned char padded_data[80];
+		size_t pad_start = 4 + (rand() % 8);
+		memcpy(padded_data + pad_start, data, 64);
+		for(size_t idx = 0; idx < pad_start; idx++) {
+			padded_data[idx] = rand() % 256;
+		}
+		for(size_t idx = pad_start + 64; idx < 80; idx++) {
+			padded_data[idx] = rand() % 256;
+		}
+		unsigned char key[16];
+		unsigned char iv[16];
+		for(size_t idx = 0; idx < 16; idx++) {
+			key[idx] = rand() % 256;
+			iv[idx] = rand() % 256;
+		}
+		if(round_type == 0) {
+			rijndael_encrypt_ecb(padded_data, 80, key);
+		} else {
+			rijndael_encrypt_cbc(padded_data, 80, key, iv);
+		}
+		int detected_type;
+		if(!memcmp(padded_data + 32, padded_data + 48, 16)) {
+			detected_type = 0;
+		} else {
+			detected_type = 1;
+		}
+		if(round_type == detected_type) {
+			puts("successful detection");
+		} else {
+			puts("unsuccessful detection");
+		}
+	}
+}
+
 int main() {
+	srand(time(0));
 	s1c1();
 	s1c2();
 	s1c3();
@@ -462,5 +507,6 @@ int main() {
 	s1c8();
 	s2c9();
 	s2c10();
+	s2c11();
 	return 0;
 }
