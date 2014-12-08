@@ -495,6 +495,61 @@ void s2c11() {
 	}
 }
 
+void s2c12() {
+	FILE* infile = fopen("inputs2c12.txt", "r");
+	fseek(infile, 0L, SEEK_END);
+	size_t size = ftell(infile);
+	fseek(infile, 0L, SEEK_SET);
+	unsigned char* input = malloc(size + 1);
+	fread(input, 1, size, infile);
+	fclose(infile);
+	input[size] = '\0';
+	unsigned char* secret_data = malloc(size);
+	size = base64_to_bytes(input, secret_data);
+
+	unsigned char key[16];
+	for(size_t idx = 0; idx < 16; idx++) {
+		key[idx] = rand() % 256;
+	}
+	unsigned char check_bsize_data[32];
+	unsigned char last_data[32];
+	size_t current_bsize = 1;
+	while(1) {
+		for(size_t idx = 0; idx < current_bsize; idx++) {
+			check_bsize_data[idx] = 'A';
+		}
+		rijndael_encrypt_ecb(check_bsize_data, current_bsize, key);
+		if(current_bsize > 1 && !memcmp(last_data, check_bsize_data, current_bsize - 1)) {
+			break;
+		}
+		memcpy(last_data, check_bsize_data, current_bsize);
+		current_bsize++;
+	}
+	printf("Determined block size to be %lu\n", current_bsize - 1);
+
+	unsigned char current_dictionary[256][16];
+	unsigned char test_data[15] = "AAAAAAAAAAAAAAA";
+	unsigned char* decrypted_data = malloc(size + 1);
+	for(size_t cur_byte = 0; cur_byte < size; cur_byte++) {
+		for(size_t dict_idx = 0; dict_idx < 256; dict_idx++) {
+			memcpy(current_dictionary[dict_idx], test_data, 15);
+			current_dictionary[dict_idx][15] = dict_idx;
+			rijndael_encrypt_ecb(current_dictionary[dict_idx], 16, key);
+		}
+		unsigned char test_block[16];
+		memcpy(test_block, test_data, 15);
+		test_block[15] = secret_data[cur_byte];
+		rijndael_encrypt_ecb(test_block, 16, key);
+		for(size_t dict_idx = 0; dict_idx < 256; dict_idx++) {
+			if(!memcmp(current_dictionary[dict_idx], test_block, 16)) {
+				decrypted_data[cur_byte] = dict_idx;
+				decrypted_data[cur_byte + 1] = '\0';
+				printf("%s\n", decrypted_data);
+			}
+		}
+	}
+}
+
 int main() {
 	srand(time(0));
 	s1c1();
@@ -508,5 +563,6 @@ int main() {
 	s2c9();
 	s2c10();
 	s2c11();
+	s2c12();
 	return 0;
 }

@@ -453,7 +453,16 @@ static void decipher(unsigned char* block, unsigned char* key) {
 	add_round_key(block, round_keys);
 }
 
+static void add_padding(unsigned char* data, size_t size) {
+	if(size % 16 != 0) {
+		for(size_t pad_start = size; pad_start < (size + 16) / 16; pad_start++) {
+			data[pad_start] = 16 - (size % 16);
+		}
+	}
+}
+
 void rijndael_encrypt_ecb(unsigned char* data, size_t size, unsigned char* key) {
+	add_padding(data, size);
 	for(size_t start = 0; start < size; start += 16) {
 		encipher(data + start, key);
 	}
@@ -466,6 +475,7 @@ void rijndael_decrypt_ecb(unsigned char* data, size_t size, unsigned char* key) 
 }
 
 void rijndael_encrypt_cbc(unsigned char* data, size_t size, unsigned char* key, unsigned char* iv) {
+	add_padding(data, size);
 	unsigned char prev_block[16];
 	memcpy(prev_block, iv, 16);
 	for(size_t start = 0; start < size; start += 16) {
