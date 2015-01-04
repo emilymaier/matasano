@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c99 -Wall -Wextra -Werror -g3
+CFLAGS=-std=c99 -Wall -Wextra -Werror -g3 -D_POSIX_C_SOURCE=200809L
 
 all: main.o rijndael.o util.o
 	${CC} -o matasano main.o rijndael.o util.o

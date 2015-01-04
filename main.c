@@ -250,6 +250,52 @@ unsigned char crack_single_xor(unsigned char* str, size_t size) {
 	return highest_key;
 }
 
+struct profile {
+	char* email;
+	int uid;
+	char* role;
+};
+
+struct profile parse_profile(char* input) {
+	struct profile output;
+	char* current = strtok(input, "&");
+	while(current) {
+		if(!strncmp("email=", current, 6)) {
+			output.email = strdup(current + 6);
+		} else if(!strncmp("uid=", current, 4)) {
+			output.uid = atoi(current + 4);
+		} else if(!strncmp("role=", current, 5)) {
+			output.role = strdup(current + 5);
+		}
+		current = strtok(NULL, "&");
+	}
+	return output;
+}
+
+char* profile_for(char* email) {
+	char* header = "email=";
+	char* footer = "&uid=10&role=user";
+	while(strchr(email, '&')) {
+		*strchr(email, '&') = ' ';
+	}
+	while(strchr(email, '=')) {
+		*strchr(email, '=') = ' ';
+	}
+	char* output = malloc(((strlen(header) + strlen(email) + strlen(footer) + 1) / 16 + 1) * 16);
+	strcpy(output, header);
+	strcpy(output + strlen(header), email);
+	strcpy(output + strlen(header) + strlen(email), footer);
+	return output;
+}
+
+unsigned char* gen_key() {
+	static unsigned char key[16];
+	for(size_t idx = 0; idx < 16; idx++) {
+		key[idx] = rand() % 256;
+	}
+	return key;
+}
+
 void s1c1() {
 	unsigned char** input = parse_lines("inputs1c1.txt");
 	printf("%s\n", bytes_to_base64(input[0], hex_to_bytes(input[0])));
@@ -507,10 +553,7 @@ void s2c12() {
 	unsigned char* secret_data = malloc(size);
 	size = base64_to_bytes(input, secret_data);
 
-	unsigned char key[16];
-	for(size_t idx = 0; idx < 16; idx++) {
-		key[idx] = rand() % 256;
-	}
+	unsigned char* key = gen_key();
 	unsigned char check_bsize_data[32];
 	unsigned char last_data[32];
 	size_t current_bsize = 1;
@@ -550,6 +593,23 @@ void s2c12() {
 	}
 }
 
+void s2c13() {
+	unsigned char* key = gen_key();
+	char* email = "          admin\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b";
+	char* test_profile = profile_for(email);
+	rijndael_encrypt_ecb((unsigned char*) test_profile, strlen(test_profile), key);
+	unsigned char admin_block[16];
+	memcpy(admin_block, test_profile + 16, 16);
+	email = "aaaaaaaaaaaaa";
+	test_profile = profile_for(email);
+	size_t profile_length = strlen(test_profile);
+	rijndael_encrypt_ecb((unsigned char*) test_profile, profile_length, key);
+	memcpy(test_profile + 32, admin_block, 16);
+	rijndael_decrypt_ecb((unsigned char*) test_profile, profile_length + 1, key);
+	struct profile parsed_profile = parse_profile(test_profile);
+	printf("email: %s, uid: %d, role: %s\n", parsed_profile.email, parsed_profile.uid, parsed_profile.role);
+}
+
 int main() {
 	srand(time(0));
 	s1c1();
@@ -564,5 +624,6 @@ int main() {
 	s2c10();
 	s2c11();
 	s2c12();
+	s2c13();
 	return 0;
 }

@@ -455,9 +455,15 @@ static void decipher(unsigned char* block, unsigned char* key) {
 
 static void add_padding(unsigned char* data, size_t size) {
 	if(size % 16 != 0) {
-		for(size_t pad_start = size; pad_start < (size + 16) / 16; pad_start++) {
+		for(size_t pad_start = size; pad_start < (size / 16 + 1) * 16; pad_start++) {
 			data[pad_start] = 16 - (size % 16);
 		}
+	}
+}
+
+static void remove_padding(unsigned char* data, size_t size) {
+	if(size % 16 != 0) {
+		data[size] = '\0';
 	}
 }
 
@@ -472,6 +478,7 @@ void rijndael_decrypt_ecb(unsigned char* data, size_t size, unsigned char* key) 
 	for(size_t start = 0; start < size; start += 16) {
 		decipher(data + start, key);
 	}
+	remove_padding(data, size);
 }
 
 void rijndael_encrypt_cbc(unsigned char* data, size_t size, unsigned char* key, unsigned char* iv) {
@@ -495,4 +502,5 @@ void rijndael_decrypt_cbc(unsigned char* data, size_t size, unsigned char* key, 
 		memxor(data + start, data + start, prev_block, 16);
 		memcpy(prev_block, cur_block, 16);
 	}
+	remove_padding(data, size);
 }
